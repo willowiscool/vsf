@@ -20,11 +20,11 @@ const (
 	BLOCK_HEIGHT_MULT = 1 //the amount that the height of the block is multiplied by its position
 	WIDTH = LIST_LENGTH * BLOCK_WIDTH //the width of the window
 	HEIGHT = LIST_LENGTH * BLOCK_HEIGHT_MULT //the height of the window
-	SLEEP = 1 //how many milliseconds to sleep between showings
+	SLEEP = 10 //how many milliseconds to sleep between showings
 )
 var (
 	imd *imdraw.IMDraw
-	list = rand.Perm(LIST_LENGTH)
+	list []int
 	stop = make(chan byte, 1)
 	FILENAME = os.Args[1]
 )
@@ -101,6 +101,8 @@ func show(L *lua.LState) int {
 }
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
+	list = rand.Perm(LIST_LENGTH)
 	for i, _ := range list {
 		list[i]++
 	}
@@ -111,6 +113,18 @@ func main() {
 		defer L.Close()
 		L.SetGlobal("show", L.NewFunction(show))
 		if err := L.DoFile(FILENAME); err != nil {
+			panic(err)
+		}
+		tableList := lua.LTable{}
+		for i, val := range list {
+			tableList.Insert(i+1, lua.LNumber(val))
+		}
+		err := L.CallByParam(lua.P{
+			Fn: L.GetGlobal("sort"),
+			NRet: 1,
+			Protect: true,
+		}, &tableList)
+		if err != nil {
 			panic(err)
 		}
 	}()
