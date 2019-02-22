@@ -13,6 +13,7 @@ import (
 	"time"
 	"fmt"
 	"os"
+	"sync"
 )
 const (
 	LIST_LENGTH = 500 //the length of the list to be sorted
@@ -23,10 +24,12 @@ const (
 	SLEEP = 10 //how many milliseconds to sleep between showings
 )
 var (
-	imd *imdraw.IMDraw
 	list []int
+	changed [LIST_LENGTH]bool
 	stop = make(chan byte, 1)
-	FILENAME = os.Args[1]
+	running = true
+	wg = sync.WaitGroup{}
+	FILENAME string
 )
 
 func run() {
@@ -41,7 +44,7 @@ func run() {
 	}
 	
 	//background
-	imd = imdraw.New(nil)
+	imd := imdraw.New(nil)
 	imd.Color = pixel.RGB(0, 1, 0)
 	imd.Push(pixel.V(0, 0))
 	imd.Color = pixel.RGB(0, 1, 1)
@@ -58,12 +61,24 @@ func run() {
 	fmt.Fprintf(txt, "VSF: %s", FILENAME)
 
 	for !win.Closed() {
+		if win.JustPressed(pixelgl.KeySpace) {
+			if running {
+				wg.Add(1)
+			} else {
+				wg.Done()
+			}
+			running = !running
+		}
 		win.Clear(color.RGBA{0, 0, 0, 0xff})
 		//imd.Draw(win)
 		txt.Draw(win, pixel.IM.Scaled(txt.Orig, 2))
 		for i, val := range list {
 			rect := imdraw.New(nil)
-			rect.Color = pixel.RGB(1, 1, 1)
+			if changed[i] {
+				rect.Color = pixel.RGB(1, 0, 0)
+			} else {
+				rect.Color = pixel.RGB(1, 1, 1)
+			}
 			rect.Push(pixel.V(
 				float64(i * BLOCK_WIDTH),
 				float64(val * BLOCK_HEIGHT_MULT)))
@@ -77,6 +92,7 @@ func run() {
 }
 
 func show(L *lua.LState) int {
+	wg.Wait()
 	time.Sleep(SLEEP * time.Millisecond)
 	newTable := L.ToTable(1)
 	if newTable.Len() != LIST_LENGTH {
@@ -95,12 +111,24 @@ func show(L *lua.LState) int {
 			exists[int(b.(lua.LNumber))] = true
 		}
 		newList[int(a.(lua.LNumber))-1] = int(b.(lua.LNumber))
+		if int(b.(lua.LNumber)) != list[int(a.(lua.LNumber))-1] {
+			changed[int(a.(lua.LNumber))-1] = true
+		} else {
+			changed[int(a.(lua.LNumber))-1] = false
+		}
 	})
 	list = newList
 	return 0
 }
 
 func main() {
+	if len(os.Args) == 2 {
+		FILENAME = os.Args[1]
+	} else {
+		fmt.Println("Usage: vsf <lua file>\nlua file must contain a function called sort that sorts an array and use the show function to display that array on the screen\npress space to pause")
+		return
+	}
+
 	rand.Seed(time.Now().UnixNano())
 	list = rand.Perm(LIST_LENGTH)
 	for i, _ := range list {
