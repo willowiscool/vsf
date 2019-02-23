@@ -15,17 +15,10 @@ import (
 	"os"
 	"sync"
 )
-const (
-	LIST_LENGTH = 500 //the length of the list to be sorted
-	BLOCK_WIDTH = 2 //the width of each block
-	BLOCK_HEIGHT_MULT = 1 //the amount that the height of the block is multiplied by its position
-	WIDTH = LIST_LENGTH * BLOCK_WIDTH //the width of the window
-	HEIGHT = LIST_LENGTH * BLOCK_HEIGHT_MULT //the height of the window
-	SLEEP = 10 //how many milliseconds to sleep between showings
-)
 var (
+	CONFIG *Config
 	list []int
-	changed [LIST_LENGTH]bool
+	changed []bool
 	stop = make(chan byte, 1)
 	running = true
 	wg = sync.WaitGroup{}
@@ -35,7 +28,9 @@ var (
 func run() {
 	cfg := pixelgl.WindowConfig{
 		Title:  "Pixel Rocks!",
-		Bounds: pixel.R(0, 0, WIDTH, HEIGHT),
+		Bounds: pixel.R(0, 0,
+			float64(CONFIG.LIST_LENGTH * CONFIG.BLOCK_WIDTH),
+			float64(CONFIG.LIST_LENGTH * CONFIG.BLOCK_HEIGHT_MULT)),
 		VSync:  true,
 	}
 	win, err := pixelgl.NewWindow(cfg)
@@ -43,21 +38,15 @@ func run() {
 		panic(err)
 	}
 	
-	//background
-	imd := imdraw.New(nil)
-	imd.Color = pixel.RGB(0, 1, 0)
-	imd.Push(pixel.V(0, 0))
-	imd.Color = pixel.RGB(0, 1, 1)
-	imd.Push(pixel.V(WIDTH, HEIGHT))
-	imd.Rectangle(0)
-
 	//filename
 	atlas := text.NewAtlas(
 		basicfont.Face7x13,
 		[]rune(FILENAME),
 		[]rune("VSF: "),
 		text.ASCII)
-	txt := text.New(pixel.V(0, HEIGHT - 26), atlas) //26 = 2 * height
+	txt := text.New(pixel.V(0,
+		float64((CONFIG.LIST_LENGTH * CONFIG.BLOCK_HEIGHT_MULT) - 26)),
+		atlas) //26 = 2 * height
 	fmt.Fprintf(txt, "VSF: %s", FILENAME)
 
 	for !win.Closed() {
@@ -69,20 +58,19 @@ func run() {
 			}
 			running = !running
 		}
-		win.Clear(color.RGBA{0, 0, 0, 0xff})
-		//imd.Draw(win)
+		win.Clear(color.RGBA{CONFIG.BG[0], CONFIG.BG[1], CONFIG.BG[2], CONFIG.BG[3]})
 		txt.Draw(win, pixel.IM.Scaled(txt.Orig, 2))
 		for i, val := range list {
 			rect := imdraw.New(nil)
 			if changed[i] {
-				rect.Color = pixel.RGB(1, 0, 0)
+				rect.Color = color.RGBA{CONFIG.CHANGED[0], CONFIG.CHANGED[1], CONFIG.CHANGED[2], CONFIG.CHANGED[3]}
 			} else {
-				rect.Color = pixel.RGB(1, 1, 1)
+				rect.Color = color.RGBA{CONFIG.FG[0], CONFIG.FG[1], CONFIG.FG[2], CONFIG.FG[3]}
 			}
 			rect.Push(pixel.V(
-				float64(i * BLOCK_WIDTH),
-				float64(val * BLOCK_HEIGHT_MULT)))
-			rect.Push(pixel.V(float64((i+1) * BLOCK_WIDTH), 0))
+				float64(i * CONFIG.BLOCK_WIDTH),
+				float64(val * CONFIG.BLOCK_HEIGHT_MULT)))
+			rect.Push(pixel.V(float64((i+1) * CONFIG.BLOCK_WIDTH), 0))
 			rect.Rectangle(0)
 			rect.Draw(win)
 		}
@@ -93,16 +81,16 @@ func run() {
 
 func show(L *lua.LState) int {
 	wg.Wait()
-	time.Sleep(SLEEP * time.Millisecond)
+	time.Sleep(time.Duration(CONFIG.SLEEP) * time.Millisecond)
 	newTable := L.ToTable(1)
-	if newTable.Len() != LIST_LENGTH {
+	if newTable.Len() != CONFIG.LIST_LENGTH {
 		//TODO: better error handling
 		panic("List of improper length given")
 	}
-	newList := make([]int, LIST_LENGTH)
-	exists := make(map[int]bool, LIST_LENGTH)
+	newList := make([]int, CONFIG.LIST_LENGTH)
+	exists := make(map[int]bool, CONFIG.LIST_LENGTH)
 	newTable.ForEach(func(a, b lua.LValue) {
-		if b.(lua.LNumber) <= 0 || b.(lua.LNumber) > LIST_LENGTH {
+		if b.(lua.LNumber) <= 0 || int(b.(lua.LNumber)) > CONFIG.LIST_LENGTH {
 			panic("Invalid value found in list")
 		}
 		if exists[int(b.(lua.LNumber))] {
@@ -122,15 +110,25 @@ func show(L *lua.LState) int {
 }
 
 func main() {
-	if len(os.Args) == 2 {
+	if len(os.Args) >= 2 {
 		FILENAME = os.Args[1]
 	} else {
-		fmt.Println("Usage: vsf <lua file>\nlua file must contain a function called sort that sorts an array and use the show function to display that array on the screen\npress space to pause")
+		fmt.Println("Usage: vsf <lua file> [settings file]\nlua file must contain a function called sort that sorts an array and use the show function to display that array on the screen\npress space to pause")
 		return
 	}
+	configFile := ""
+	if len(os.Args) >= 3 {
+		configFile = os.Args[2]
+	}
+	var err error
+	CONFIG, err = parse(configFile)
+	if err != nil {
+		panic(err)
+	}
+	changed = make([]bool, CONFIG.LIST_LENGTH)
 
 	rand.Seed(time.Now().UnixNano())
-	list = rand.Perm(LIST_LENGTH)
+	list = rand.Perm(CONFIG.LIST_LENGTH)
 	for i, _ := range list {
 		list[i]++
 	}

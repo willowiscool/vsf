@@ -22,8 +22,8 @@ function partition(array, p, r)
 			local temp = array[i]
 			array[i] = array[j]
 			array[j] = temp
+			show(list)
 		end
-		show(list)
 	end
 	local temp = array[i + 1]
 	array[i + 1] = array[r]

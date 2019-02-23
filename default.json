@@ -1,0 +1,9 @@
+{
+	"list_length": 500,
+	"block_width": 2,
+	"block_height_mult": 1,
+	"sleep": 5,
+	"bg": [0, 0, 0, 255],
+	"fg": [255, 255, 255, 255],
+	"changed": [255, 0, 0, 255]
+}
