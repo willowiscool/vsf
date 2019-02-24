@@ -135,7 +135,7 @@ func run() {
 func show(L *lua.LState) int {
 	showCount++
 	wg.Wait()
-	time.Sleep(time.Duration(CONFIG.SLEEP) * time.Millisecond)
+	time.Sleep(time.Duration(CONFIG.SLEEP * float64(time.Millisecond)))
 	newTable := L.ToTable(1)
 	if newTable.Len() != CONFIG.LIST_LENGTH {
 		//TODO: better error handling
