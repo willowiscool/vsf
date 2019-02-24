@@ -13,6 +13,8 @@ type Config struct {
 	BG [4]uint8 `json:"bg"` //the background color, in RGBA, with each number being between 0 and 0xff
 	FG [4]uint8 `json:"fg"` //the foreground color, as above
 	CHANGED [4]uint8 `json:"changed"` //the color of changed blocks, as above
+	VSYNC bool `json:"vsync"` //whether to use VSync or not
+	FPSFILTER int `json:"fpsfilter"` //the number of recent frames to average for FPS. Default of 30 is fine
 }
 func parse(filename string) (*Config, error) {
 	var file []byte
@@ -31,6 +33,8 @@ func parse(filename string) (*Config, error) {
 		BG: [4]uint8{0, 0, 0, 0xff},
 		FG: [4]uint8{0xff, 0xff, 0xff, 0xff},
 		CHANGED: [4]uint8{0xff, 0, 0, 0xff},
+		VSYNC: false,
+		FPSFILTER: 30,
 	}
 	if filename != "" {
 		err := json.Unmarshal(file, config)

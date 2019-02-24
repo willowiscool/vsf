@@ -31,7 +31,9 @@ func run() {
 		Bounds: pixel.R(0, 0,
 			float64(CONFIG.LIST_LENGTH * CONFIG.BLOCK_WIDTH),
 			float64(CONFIG.LIST_LENGTH * CONFIG.BLOCK_HEIGHT_MULT)),
-		VSync:  true,
+	}
+	if CONFIG.VSYNC {
+		cfg.VSync = true
 	}
 	win, err := pixelgl.NewWindow(cfg)
 	if err != nil {
@@ -42,13 +44,15 @@ func run() {
 	atlas := text.NewAtlas(
 		basicfont.Face7x13,
 		[]rune(FILENAME),
-		[]rune("VSF: "),
 		text.ASCII)
 	txt := text.New(pixel.V(0,
-		float64((CONFIG.LIST_LENGTH * CONFIG.BLOCK_HEIGHT_MULT) - 26)),
+		float64((CONFIG.LIST_LENGTH * CONFIG.BLOCK_HEIGHT_MULT) - 13)),
 		atlas) //26 = 2 * height
 	fmt.Fprintf(txt, "VSF: %s", FILENAME)
 
+	last := time.Now()
+	filter := make([]time.Duration, 0, CONFIG.FPSFILTER)
+	var fps float64 = 0
 	for !win.Closed() {
 		if win.JustPressed(pixelgl.KeySpace) {
 			if running {
@@ -58,8 +62,17 @@ func run() {
 			}
 			running = !running
 		}
+		if win.JustPressed(pixelgl.KeyQ) {
+			stop<-1
+			win.SetClosed(true)
+		}
 		win.Clear(color.RGBA{CONFIG.BG[0], CONFIG.BG[1], CONFIG.BG[2], CONFIG.BG[3]})
-		txt.Draw(win, pixel.IM.Scaled(txt.Orig, 2))
+		txt.Draw(win, pixel.IM)
+		fpsText := text.New(pixel.V(0,
+			float64((CONFIG.LIST_LENGTH * CONFIG.BLOCK_HEIGHT_MULT) - 26)),
+			atlas)
+		fmt.Fprintf(fpsText, "FPS: %.2f", fps)
+		fpsText.Draw(win, pixel.IM)
 		for i, val := range list {
 			rect := imdraw.New(nil)
 			if changed[i] {
@@ -75,6 +88,22 @@ func run() {
 			rect.Draw(win)
 		}
 		win.Update()
+
+		frameDiff := time.Since(last)
+		last = time.Now()
+		if len(filter) == cap(filter) {
+			for i := 1; i < len(filter); i++ {
+				filter[i-1] = filter[i]
+			}
+			filter[len(filter)-1] = frameDiff
+		} else {
+			filter = append(filter, frameDiff)
+		}
+		var total int64
+		for _, t := range filter {
+			total += int64(t)
+		}
+		fps = 1 / time.Duration(total / int64(len(filter))).Seconds()
 	}
 	stop<-1
 }
@@ -88,16 +117,16 @@ func show(L *lua.LState) int {
 		panic("List of improper length given")
 	}
 	newList := make([]int, CONFIG.LIST_LENGTH)
-	exists := make(map[int]bool, CONFIG.LIST_LENGTH)
+	//exists := make(map[int]bool, CONFIG.LIST_LENGTH)
 	newTable.ForEach(func(a, b lua.LValue) {
 		if b.(lua.LNumber) <= 0 || int(b.(lua.LNumber)) > CONFIG.LIST_LENGTH {
 			panic("Invalid value found in list")
 		}
-		if exists[int(b.(lua.LNumber))] {
+		/*if exists[int(b.(lua.LNumber))] {
 			panic("Duplicate value found in list")
 		} else {
 			exists[int(b.(lua.LNumber))] = true
-		}
+		}*/
 		newList[int(a.(lua.LNumber))-1] = int(b.(lua.LNumber))
 		if int(b.(lua.LNumber)) != list[int(a.(lua.LNumber))-1] {
 			changed[int(a.(lua.LNumber))-1] = true
