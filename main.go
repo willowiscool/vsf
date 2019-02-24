@@ -23,6 +23,8 @@ var (
 	running = true
 	wg = sync.WaitGroup{}
 	FILENAME string
+	finished = false
+	showCount = 0
 )
 
 func run() {
@@ -55,12 +57,22 @@ func run() {
 	var fps float64 = 0
 	for !win.Closed() {
 		if win.JustPressed(pixelgl.KeySpace) {
-			if running {
-				wg.Add(1)
+			if !finished {
+				if running {
+					wg.Add(1)
+				} else {
+					wg.Done()
+				}
+				running = !running
 			} else {
-				wg.Done()
+				list = rand.Perm(CONFIG.LIST_LENGTH)
+				for i, _ := range list {
+					list[i]++
+				}
+				showCount = 0
+				go runLua()
+				finished = false
 			}
-			running = !running
 		}
 		if win.JustPressed(pixelgl.KeyQ) {
 			stop<-1
@@ -73,8 +85,20 @@ func run() {
 			atlas)
 		fmt.Fprintf(fpsText, "FPS: %.2f", fps)
 		fpsText.Draw(win, pixel.IM)
+		showCountText := text.New(pixel.V(0,
+			float64((CONFIG.LIST_LENGTH * CONFIG.BLOCK_HEIGHT_MULT) - 39)),
+			atlas)
+		fmt.Fprintf(showCountText, "# of times show is called: %d", showCount)
+		showCountText.Draw(win, pixel.IM)
+		if finished {
+			finishedText := text.New(pixel.V(0,
+				float64((CONFIG.LIST_LENGTH * CONFIG.BLOCK_HEIGHT_MULT) - 52)),
+				atlas)
+			fmt.Fprint(finishedText, "Sort finished! Press <space> to start again")
+			finishedText.Draw(win, pixel.IM)
+		}
+		rect := imdraw.New(nil)
 		for i, val := range list {
-			rect := imdraw.New(nil)
 			if changed[i] {
 				rect.Color = color.RGBA{CONFIG.CHANGED[0], CONFIG.CHANGED[1], CONFIG.CHANGED[2], CONFIG.CHANGED[3]}
 			} else {
@@ -85,8 +109,8 @@ func run() {
 				float64(val * CONFIG.BLOCK_HEIGHT_MULT)))
 			rect.Push(pixel.V(float64((i+1) * CONFIG.BLOCK_WIDTH), 0))
 			rect.Rectangle(0)
-			rect.Draw(win)
 		}
+		rect.Draw(win)
 		win.Update()
 
 		frameDiff := time.Since(last)
@@ -109,6 +133,7 @@ func run() {
 }
 
 func show(L *lua.LState) int {
+	showCount++
 	wg.Wait()
 	time.Sleep(time.Duration(CONFIG.SLEEP) * time.Millisecond)
 	newTable := L.ToTable(1)
@@ -163,27 +188,30 @@ func main() {
 	}
 	fmt.Println(list)
 
-	go func() {
-		L := lua.NewState()
-		defer L.Close()
-		L.SetGlobal("show", L.NewFunction(show))
-		if err := L.DoFile(FILENAME); err != nil {
-			panic(err)
-		}
-		tableList := lua.LTable{}
-		for i, val := range list {
-			tableList.Insert(i+1, lua.LNumber(val))
-		}
-		err := L.CallByParam(lua.P{
-			Fn: L.GetGlobal("sort"),
-			NRet: 1,
-			Protect: true,
-		}, &tableList)
-		if err != nil {
-			panic(err)
-		}
-	}()
+	go runLua()
 	pixelgl.Run(run)
 	<-stop
 }
 
+func runLua() {
+	L := lua.NewState()
+	defer L.Close()
+	L.SetGlobal("show", L.NewFunction(show))
+	if err := L.DoFile(FILENAME); err != nil {
+		panic(err)
+	}
+	tableList := lua.LTable{}
+	for i, val := range list {
+		tableList.Insert(i+1, lua.LNumber(val))
+	}
+	err := L.CallByParam(lua.P{
+		Fn: L.GetGlobal("sort"),
+		NRet: 1,
+		Protect: true,
+	}, &tableList)
+	if err != nil {
+		panic(err)
+	}
+	finished = true
+}
+	
