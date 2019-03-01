@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
-	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/text"
 	"golang.org/x/image/font/basicfont"
 	"github.com/yuin/gopher-lua"
@@ -28,11 +27,16 @@ var (
 )
 
 func run() {
+	width := float64(CONFIG.LIST_LENGTH * CONFIG.BLOCK_WIDTH)
+	height := float64(CONFIG.LIST_LENGTH * CONFIG.BLOCK_HEIGHT_MULT)
+
+	if CONFIG.SHOWER == "circle" {
+		height = 2 * height
+		width = height
+	}
 	cfg := pixelgl.WindowConfig{
 		Title:  "Pixel Rocks!",
-		Bounds: pixel.R(0, 0,
-			float64(CONFIG.LIST_LENGTH * CONFIG.BLOCK_WIDTH),
-			float64(CONFIG.LIST_LENGTH * CONFIG.BLOCK_HEIGHT_MULT)),
+		Bounds: pixel.R(0, 0, width, height),
 	}
 	if CONFIG.VSYNC {
 		cfg.VSync = true
@@ -47,9 +51,7 @@ func run() {
 		basicfont.Face7x13,
 		[]rune(FILENAME),
 		text.ASCII)
-	txt := text.New(pixel.V(0,
-		float64((CONFIG.LIST_LENGTH * CONFIG.BLOCK_HEIGHT_MULT) - 13)),
-		atlas) //26 = 2 * height
+	txt := text.New(pixel.V(0, height - 13), atlas)
 	fmt.Fprintf(txt, "VSF: %s", FILENAME)
 
 	last := time.Now()
@@ -80,37 +82,27 @@ func run() {
 		}
 		win.Clear(color.RGBA{CONFIG.BG[0], CONFIG.BG[1], CONFIG.BG[2], CONFIG.BG[3]})
 		txt.Draw(win, pixel.IM)
-		fpsText := text.New(pixel.V(0,
-			float64((CONFIG.LIST_LENGTH * CONFIG.BLOCK_HEIGHT_MULT) - 26)),
-			atlas)
+		fpsText := text.New(pixel.V(0, height - 26), atlas)
 		fmt.Fprintf(fpsText, "FPS: %.2f", fps)
 		fpsText.Draw(win, pixel.IM)
-		showCountText := text.New(pixel.V(0,
-			float64((CONFIG.LIST_LENGTH * CONFIG.BLOCK_HEIGHT_MULT) - 39)),
-			atlas)
+		showCountText := text.New(pixel.V(0, height - 39), atlas)
 		fmt.Fprintf(showCountText, "# of times show is called: %d", showCount)
 		showCountText.Draw(win, pixel.IM)
 		if finished {
-			finishedText := text.New(pixel.V(0,
-				float64((CONFIG.LIST_LENGTH * CONFIG.BLOCK_HEIGHT_MULT) - 52)),
-				atlas)
+			finishedText := text.New(pixel.V(0, height - 52), atlas)
 			fmt.Fprint(finishedText, "Sort finished! Press <space> to start again")
 			finishedText.Draw(win, pixel.IM)
 		}
-		rect := imdraw.New(nil)
-		for i, val := range list {
-			if changed[i] {
-				rect.Color = color.RGBA{CONFIG.CHANGED[0], CONFIG.CHANGED[1], CONFIG.CHANGED[2], CONFIG.CHANGED[3]}
-			} else {
-				rect.Color = color.RGBA{CONFIG.FG[0], CONFIG.FG[1], CONFIG.FG[2], CONFIG.FG[3]}
-			}
-			rect.Push(pixel.V(
-				float64(i * CONFIG.BLOCK_WIDTH),
-				float64(val * CONFIG.BLOCK_HEIGHT_MULT)))
-			rect.Push(pixel.V(float64((i+1) * CONFIG.BLOCK_WIDTH), 0))
-			rect.Rectangle(0)
+		switch CONFIG.SHOWER{
+		case "rect":
+			rectDraw(list, changed).Draw(win)
+		case "point":
+			pointDraw(list, changed).Draw(win)
+		case "circle":
+			circleDraw(list, changed).Draw(win)
+		default:
+			panic("Invalid shower given!")
 		}
-		rect.Draw(win)
 		win.Update()
 
 		frameDiff := time.Since(last)
