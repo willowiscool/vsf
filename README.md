@@ -2,6 +2,8 @@
 
 A program to visualize sorting algorithms written in Lua
 
+![VSF Circle GIF](https://media.giphy.com/media/1QkZRFWj4qpuVvdLyA/giphy.gif)
+
 ## Installation
 
 First, make sure you have all of the dependencies listed [here](https://github.com/go-gl/glfw#installation). Next, just run `go get -u github.com/vityavv/vsf` to install it.
