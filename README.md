@@ -28,6 +28,9 @@ The config file is a JSON file. You can see an example of this in the `defaults.
 | `bg` | An array of four values from 0-255, representing the RGBA color of the background | `[0, 0, 0, 255]` |
 | `fg` | The foreground color (color of the blocks), in the same manner | `[255, 255, 255, 255]` |
 | `changed` | The color that changed blocks are shown | `[255, 0, 0, 255]` |
+| `rainbow` | Whether to use a rainbow or not. If true, `bg`, `fg`, and `changed` are ignored | `false` |
+| `vsync` | Whether to use VSync or not | `false` |
+| `fpsfilter` | How many frames to use when calculating FPS. If you're unsure, the default should be fine | `30` |
 
 ### Writing Sorts
 

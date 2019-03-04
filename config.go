@@ -14,6 +14,7 @@ type Config struct {
 	BG [4]uint8 `json:"bg"` //the background color, in RGBA, with each number being between 0 and 0xff
 	FG [4]uint8 `json:"fg"` //the foreground color, as above
 	CHANGED [4]uint8 `json:"changed"` //the color of changed blocks, as above
+	RAINBOW bool `json:"rainbow"` //whether to use rainbow or not
 	VSYNC bool `json:"vsync"` //whether to use VSync or not
 	FPSFILTER int `json:"fpsfilter"` //the number of recent frames to average for FPS. Default of 30 is fine
 }
@@ -35,6 +36,7 @@ func parse(filename string) (*Config, error) {
 		BG: [4]uint8{0, 0, 0, 0xff},
 		FG: [4]uint8{0xff, 0xff, 0xff, 0xff},
 		CHANGED: [4]uint8{0xff, 0, 0, 0xff},
+		RAINBOW: false,
 		VSYNC: false,
 		FPSFILTER: 30,
 	}

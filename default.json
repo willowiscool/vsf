@@ -1,12 +1,10 @@
 {
-	"list_length": 380,
-	"block_width": 2,
+	"list_length": 764,
+	"block_width": 1,
 	"block_height_mult": 1,
-	"shower": "circle",
-	"sleep": 10,
-	"bg": [0, 0, 0, 255],
-	"fg": [255, 255, 255, 255],
-	"changed": [255, 0, 0, 255],
+	"shower": "rect",
+	"sleep": 0.5,
+	"rainbow": true,
 	"vsync": true,
 	"fpsfilter": 30
 }

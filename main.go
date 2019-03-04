@@ -35,7 +35,7 @@ func run() {
 		width = height
 	}
 	cfg := pixelgl.WindowConfig{
-		Title:  "Pixel Rocks!",
+		Title:  "VSF",
 		Bounds: pixel.R(0, 0, width, height),
 	}
 	if CONFIG.VSYNC {
@@ -77,8 +77,8 @@ func run() {
 			}
 		}
 		if win.JustPressed(pixelgl.KeyQ) {
-			stop<-1
 			win.SetClosed(true)
+			os.Exit(0)
 		}
 		win.Clear(color.RGBA{CONFIG.BG[0], CONFIG.BG[1], CONFIG.BG[2], CONFIG.BG[3]})
 		txt.Draw(win, pixel.IM)
@@ -176,6 +176,7 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 	list = rand.Perm(CONFIG.LIST_LENGTH)
 	for i, _ := range list {
+		//list[i] = len(list) - i
 		list[i]++
 	}
 	fmt.Println(list)
@@ -206,4 +207,3 @@ func runLua() {
 	}
 	finished = true
 }
-	
