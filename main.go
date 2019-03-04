@@ -28,9 +28,9 @@ var (
 
 func run() {
 	width := float64(CONFIG.LIST_LENGTH * CONFIG.BLOCK_WIDTH)
-	height := float64(CONFIG.LIST_LENGTH * CONFIG.BLOCK_HEIGHT_MULT)
+	height := float64(CONFIG.LIST_LENGTH) * CONFIG.BLOCK_HEIGHT_MULT
 
-	if CONFIG.SHOWER == "circle" {
+	if CONFIG.SHOWER == "circle" || CONFIG.SHOWER == "shell" || CONFIG.SHOWER == "hoops" {
 		height = 2 * height
 		width = height
 	}
@@ -100,6 +100,12 @@ func run() {
 			pointDraw(list, changed).Draw(win)
 		case "circle":
 			circleDraw(list, changed).Draw(win)
+		case "block":
+			blockDraw(list, changed).Draw(win)
+		case "shell":
+			shellDraw(list, changed).Draw(win)
+		case "hoops":
+			hoopDraw(list, changed).Draw(win)
 		default:
 			panic("Invalid shower given!")
 		}

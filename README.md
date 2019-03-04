@@ -22,7 +22,7 @@ The config file is a JSON file. You can see an example of this in the `defaults.
 | --- | --- | --- |
 | `list_length` | The length of the list to be sorted | `500` |
 | `block_width` | The width of each displayed block | `2` |
-| `block_height_mult` | The amount each block's height is multiplied by when displayed | `1` |
+| `block_height_mult` | The amount each block's height is multiplied by when displayed\* | `1` |
 | `shower` | The shower to use. See below | `rect` |
 | `sleep` | How long to sleep before showing something, in milliseconds | `10` |
 | `bg` | An array of four values from 0-255, representing the RGBA color of the background | `[0, 0, 0, 255]` |
@@ -32,10 +32,22 @@ The config file is a JSON file. You can see an example of this in the `defaults.
 | `vsync` | Whether to use VSync or not | `false` |
 | `fpsfilter` | How many frames to use when calculating FPS. If you're unsure, the default should be fine | `30` |
 
+\*: `block_height_mult` is actually a float and not an int, but you should only use values less than one if you use `shell` or `circle` as your shower (see below)
+
 ### Writing Sorts
 
 Sorts are written in Lua. You must have a function called `sort`, which takes an array (table) as its argument. That function will be called with the random list at the start. You must then call the function `show` whenever you make a change in that array. The `show` function takes an array of the same length as the original. Check the `sorts` folder for examples.
 
 ### Showers
 
-There are currently three different showers: `"rect"`, `"point"`, and `"circle"`. For the point and rect showers, refer to the description above for what `block_width` and `block_height_mult` do. The `"circle"` shower uses `block_height_mult` and makes the width of each piece of the circle equal to that times its value, but ignores `block_width`.
+Here is a list of showers and their respective special settings:
+
+| Shower | Notes |
+| --- | --- |
+| `rect` | The default shower. Refer to the descriptions of the keys above |
+| `point` | Refer to the descriptions of the keys above |
+| `shell` | Uses `block_heigh_mult` to determine the width of the shell; ignores `block_width` |
+| `circle` | Same as `shell`, but for this mode it is recommended to set `rainbow` to true |
+| `hoops` | Same as `cricle`, including the `rainbow` part |
+| `block` | Same as `rect`, but you should use `rainbow` for this one too |
+

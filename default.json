@@ -1,9 +1,9 @@
 {
-	"list_length": 764,
+	"list_length": 191,
 	"block_width": 1,
-	"block_height_mult": 1,
-	"shower": "rect",
-	"sleep": 0.5,
+	"block_height_mult": 2,
+	"shower": "hoops",
+	"sleep": 1,
 	"rainbow": true,
 	"vsync": true,
 	"fpsfilter": 30

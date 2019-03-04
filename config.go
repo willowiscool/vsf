@@ -8,7 +8,7 @@ import (
 type Config struct {
 	LIST_LENGTH int `json:"list_length"` //the length of the list
 	BLOCK_WIDTH int `json:"block_width"` //the width of each block
-	BLOCK_HEIGHT_MULT int `json:"block_height_mult"` //the amout each block's height is multiplied by when displayed
+	BLOCK_HEIGHT_MULT float64 `json:"block_height_mult"` //the amout each block's height is multiplied by when displayed
 	SHOWER string `json:"shower"` //the method to use when displaying the sort
 	SLEEP float64 `json:"sleep"` //the amount of sleep time between showings
 	BG [4]uint8 `json:"bg"` //the background color, in RGBA, with each number being between 0 and 0xff
